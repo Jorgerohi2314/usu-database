@@ -1,0 +1,107 @@
+/* Estilos generales */
+body {
+    background-color: #f8f9fa;
+}
+
+.vista {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Estilos para la tabla */
+.table-hover tbody tr:hover {
+    cursor: pointer;
+    background-color: #e9ecef;
+}
+
+/* Estilos para el formulario */
+.nav-tabs .nav-link {
+    color: #495057;
+}
+
+.nav-tabs .nav-link.active {
+    font-weight: bold;
+}
+
+/* Estilos para las tarjetas de formación complementaria */
+.curso-item {
+    transition: all 0.3s ease;
+}
+
+.curso-item:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Estilos para los botones de acción */
+.btn-accion {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+/* Estilos para la vista de detalles */
+.card-detalle {
+    margin-bottom: 1rem;
+    border-left: 4px solid #0d6efd;
+}
+
+.card-detalle .card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    font-weight: bold;
+}
+
+/* Estilos para el toast de notificaciones */
+.toast {
+    min-width: 300px;
+}
+
+/* Estilos responsive */
+@media (max-width: 768px) {
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+    
+    .btn-group-sm > .btn, .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+    }
+}
+
+/* Estilos para la carga */
+.cargando {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+}
+
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+/* Estilos para los campos requeridos */
+.form-control:required, .form-select:required {
+    border-left: 3px solid #dc3545;
+}
+
+/* Estilos para los mensajes de error */
+.error-message {
+    color: #dc3545;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+/* Estilos para la paginación */
+.pagination .page-link {
+    color: #0d6efd;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
