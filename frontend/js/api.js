@@ -1,5 +1,5 @@
 // Configuración de la API
-const API_BASE_URL = process.env.API_URL || 'postgresql://usu_database_db_user:7WGxONIb7W8AmRf4VGaZnqeG6OBREbHR@dpg-d2cruvbe5dus73drp9n0-a/usu_database_db';
+const API_BASE_URL = process.env.API_URL || 'http://127.0.0.1:5000/';
 
 // Clase para manejar las llamadas a la API
 class ApiService {
