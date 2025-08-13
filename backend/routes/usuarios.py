@@ -6,22 +6,34 @@ usuarios_bp = Blueprint('usuarios', __name__)
 @usuarios_bp.route('/usuarios', methods=['GET'])
 def obtener_usuarios():
     """Obtiene todos los usuarios"""
-    usuarios = UsuarioService.obtener_todos_los_usuarios()
-    return jsonify([usuario.to_dict() for usuario in usuarios])
+    try:
+        print("📥 Solicitud GET /usuarios recibida")
+        usuarios = UsuarioService.obtener_todos_los_usuarios()
+        print(f"✅ Se encontraron {len(usuarios)} usuarios")
+        return jsonify([usuario.to_dict() for usuario in usuarios])
+    except Exception as e:
+        print(f"❌ Error en obtener_usuarios: {e}")
+        return jsonify({'error': f'Error al obtener usuarios: {str(e)}'}), 500
 
 @usuarios_bp.route('/usuarios', methods=['POST'])
 def crear_usuario():
     """Crea un nuevo usuario"""
-    datos = request.get_json()
-    
-    # Validación básica
-    if not datos or not datos.get('nombre') or not datos.get('apellidos') or not datos.get('email'):
-        return jsonify({'error': 'Faltan datos obligatorios: nombre, apellidos, email'}), 400
-    
     try:
+        print("📥 Solicitud POST /usuarios recibida")
+        datos = request.get_json()
+        print(f"📦 Datos recibidos: {datos}")
+        
+        # Validación básica
+        if not datos or not datos.get('nombre') or not datos.get('apellidos') or not datos.get('email'):
+            print("⚠️ Faltan datos obligatorios")
+            return jsonify({'error': 'Faltan datos obligatorios: nombre, apellidos, email'}), 400
+        
+        print("✅ Validación pasada, creando usuario...")
         nuevo_usuario = UsuarioService.crear_usuario(datos)
+        print("✅ Usuario creado exitosamente")
         return jsonify(nuevo_usuario.to_dict()), 201
     except Exception as e:
+        print(f"❌ Error en crear_usuario: {e}")
         return jsonify({'error': str(e)}), 500
 
 @usuarios_bp.route('/usuarios/<int:id>', methods=['GET'])

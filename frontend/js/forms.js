@@ -1,32 +1,65 @@
 // Clase para manejar los formularios
 class FormManager {
     constructor() {
+        console.log('🏗️ Creando instancia de FormManager...');
+        
         this.formulario = document.getElementById('formulario-usuario');
+        console.log('📝 Formulario encontrado:', this.formulario);
+        
         this.usuarioId = null;
+        console.log('🆔 ID de usuario inicializado en:', this.usuarioId);
+        
         this.inicializarEventos();
+        console.log('✅ FormManager inicializado correctamente');
     }
 
     inicializarEventos() {
+        console.log('🎯 Inicializando eventos del formulario...');
+        
         // Evento para agregar miembros perceptores
-        document.getElementById('btn-agregar-miembro').addEventListener('click', () => {
-            this.agregarMiembroPerceptor();
-        });
+        const btnAgregarMiembro = document.getElementById('btn-agregar-miembro');
+        if (btnAgregarMiembro) {
+            btnAgregarMiembro.addEventListener('click', () => {
+                console.log('👥 Click en agregar miembro');
+                this.agregarMiembroPerceptor();
+            });
+        } else {
+            console.error('❌ Botón agregar miembro no encontrado');
+        }
 
         // Evento para agregar cursos de formación complementaria
-        document.getElementById('btn-agregar-curso').addEventListener('click', () => {
-            this.agregarCurso();
-        });
+        const btnAgregarCurso = document.getElementById('btn-agregar-curso');
+        if (btnAgregarCurso) {
+            btnAgregarCurso.addEventListener('click', () => {
+                console.log('📚 Click en agregar curso');
+                this.agregarCurso();
+            });
+        } else {
+            console.error('❌ Botón agregar curso no encontrado');
+        }
 
         // Evento para limpiar formulario
-        document.getElementById('btn-limpiar').addEventListener('click', () => {
-            this.limpiarFormulario();
-        });
+        const btnLimpiar = document.getElementById('btn-limpiar');
+        if (btnLimpiar) {
+            btnLimpiar.addEventListener('click', () => {
+                console.log('🧹 Click en limpiar formulario');
+                this.limpiarFormulario();
+            });
+        } else {
+            console.error('❌ Botón limpiar no encontrado');
+        }
 
         // Evento para enviar formulario
-        this.formulario.addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.guardarUsuario();
-        });
+        if (this.formulario) {
+            console.log('✅ Formulario encontrado, configurando evento submit...');
+            this.formulario.addEventListener('submit', (e) => {
+                console.log('🚀 Evento submit disparado!');
+                e.preventDefault();
+                this.guardarUsuario();
+            });
+        } else {
+            console.error('❌ Formulario no encontrado!');
+        }
 
         // Eventos para eliminar elementos dinámicos
         document.addEventListener('click', (e) => {
@@ -43,6 +76,13 @@ class FormManager {
         document.getElementById('fecha_nacimiento').addEventListener('change', (e) => {
             this.calcularEdad(e.target.value);
         });
+        const fechaNacimiento = document.getElementById('fecha_nacimiento');
+        if (fechaNacimiento) {
+            fechaNacimiento.addEventListener('change', (e) => {
+                console.log('📅 Fecha de nacimiento cambiada:', e.target.value);
+                this.calcularEdad(e.target.value);
+            });
+        }
     }
 
     calcularEdad(fechaNacimiento) {
@@ -236,6 +276,8 @@ class FormManager {
     }
 
     obtenerDatosFormulario() {
+        console.log('📋 Obteniendo datos del formulario...');
+
         // Recopilar datos básicos
         const datos = {
             nombre: document.getElementById('nombre').value,
@@ -265,15 +307,52 @@ class FormManager {
             ano_finalizacion: parseInt(document.getElementById('ano_finalizacion').value) || null,
             idiomas: document.getElementById('idiomas').value,
             informatica: document.getElementById('informatica').value,
-            experiencia_laboral_previa: document.getElementById('experiencia_laboral_previa').value
+            experiencia_laboral_previa: document.getElementById('experiencia_laboral_previa').value,
+            nombre: document.getElementById('nombre')?.value || '',
+            apellidos: document.getElementById('apellidos')?.value || '',
+            fecha_nacimiento: document.getElementById('fecha_nacimiento')?.value || '',
+            edad: parseInt(document.getElementById('edad')?.value) || null,
+            nacionalidad: document.getElementById('nacionalidad')?.value || '',
+            documento_identidad: document.getElementById('documento_identidad')?.value || '',
+            sexo: document.getElementById('sexo')?.value || '',
+            direccion: document.getElementById('direccion')?.value || '',
+            localidad: document.getElementById('localidad')?.value || '',
+            cp: document.getElementById('cp')?.value || '',
+            email: document.getElementById('email')?.value || '',
+            telefono1: document.getElementById('telefono1')?.value || '',
+            telefono2: document.getElementById('telefono2')?.value || '',
+            carnet: document.getElementById('carnet')?.value || '',
+            vehiculo_propio: document.getElementById('vehiculo_propio')?.checked || false,
+            discapacidad_porcentaje: parseInt(document.getElementById('discapacidad_porcentaje')?.value) || null,
+            discapacidad_tipo: document.getElementById('discapacidad_tipo')?.value || '',
+            entidad_derivacion: document.getElementById('entidad_derivacion')?.value || '',
+            tecnico_derivacion: document.getElementById('tecnico_derivacion')?.value || '',
+            colectivo: document.getElementById('colectivo')?.value || '',
+            composicion_familiar: document.getElementById('composicion_familiar')?.value || '',
+            situacion_economica: document.getElementById('situacion_economica')?.value || '',
+            otras_situaciones: document.getElementById('otras_situaciones')?.value || '',
+            formacion_academica: document.getElementById('formacion_academica')?.value || '',
+            ano_finalizacion: parseInt(document.getElementById('ano_finalizacion')?.value) || null,
+            idiomas: document.getElementById('idiomas')?.value || '',
+            informatica: document.getElementById('informatica')?.value || '',
+            experiencia_laboral_previa: document.getElementById('experiencia_laboral_previa')?.value || ''
         };
+
+        console.log('📊 Datos básicos recopilados:', datos);
         
         // Recopilar miembros perceptores
-        const miembrosPerceptores = [];
-        document.querySelectorAll('.miembro-perceptor').forEach(miembro => {
-            const numero = miembro.querySelector('input[type="number"]').value;
-            const tipo = miembro.querySelectorAll('input[type="text"]')[0].value;
-            const cantidad = miembro.querySelectorAll('input[type="text"]')[1].value;
+        const miembrosElements = document.querySelectorAll('.miembro-perceptor');
+        console.log(`👥 Encontrados ${miembrosElements.length} miembros perceptores`);
+        
+        miembrosElements.forEach((miembro, index) => {
+            const numeroInput = miembro.querySelector('input[type="number"]');
+            const textoInputs = miembro.querySelectorAll('input[type="text"]');
+            
+            const numero = numeroInput?.value || '';
+            const tipo = textoInputs[0]?.value || '';
+            const cantidad = textoInputs[1]?.value || '';
+            
+            console.log(`👤 Miembro ${index}: numero=${numero}, tipo=${tipo}, cantidad=${cantidad}`);
             
             if (numero || tipo || cantidad) {
                 miembrosPerceptores.push({
@@ -306,6 +385,10 @@ class FormManager {
 
     async guardarUsuario() {
         try {
+            console.log('🔄 Iniciando guardado de usuario...');
+            // Primero, remover todos los atributos required para evitar el error de foco
+            const requiredFields = document.querySelectorAll('#formulario-usuario [required]');
+            
             const datos = this.obtenerDatosFormulario();
             
             // Validar campos obligatorios

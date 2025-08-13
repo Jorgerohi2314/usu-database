@@ -1,13 +1,23 @@
 // Clase principal de la aplicación
 class AppManager {
     constructor() {
+        console.log('🚀 Creando instancia de AppManager...');
+        
         this.vistaActual = 'lista';
         this.usuarios = [];
         this.paginaActual = 1;
         this.totalPaginas = 1;
+        
+        console.log('📋 Inicializando FormManager...');
         this.formManager = new FormManager();
+        
+        console.log('🔧 Inicializando eventos de AppManager...');
         this.inicializarEventos();
+        
+        console.log('📥 Cargando usuarios iniciales...');
         this.cargarUsuarios();
+        
+        console.log('✅ AppManager inicializado correctamente');
     }
 
     inicializarEventos() {
@@ -368,5 +378,12 @@ class AppManager {
 
 // Inicializar la aplicación cuando el DOM esté cargado
 document.addEventListener('DOMContentLoaded', () => {
-    window.appManager = new AppManager();
+    console.log('🌐 DOM cargado, inicializando aplicación...');
+    
+    try {
+        window.appManager = new AppManager();
+        console.log('✅ Aplicación inicializada correctamente');
+    } catch (error) {
+        console.error('❌ Error al inicializar la aplicación:', error);
+    }
 });

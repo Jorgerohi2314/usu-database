@@ -3,6 +3,28 @@ const API_BASE_URL = process.env.API_URL || 'http://127.0.0.1:5000/';
 
 // Clase para manejar las llamadas a la API
 class ApiService {
+    // Probar conexión con el backend
+    static async probarConexion() {
+        try {
+            const url = `${API_BASE_URL}/`;
+            this.logRequest('GET', url);
+            
+            const response = await fetch(url);
+            console.log(`📡 API Response: ${response.status} ${response.statusText}`);
+            
+            if (response.ok) {
+                const data = await response.text();
+                console.log('✅ Conexión exitosa:', data);
+                return true;
+            } else {
+                console.error('❌ Error de conexión:', response.status, response.statusText);
+                return false;
+            }
+        } catch (error) {
+            console.error('❌ Error al probar conexión:', error);
+            return false;
+        }
+    }
     // Obtener todos los usuarios
     static async obtenerUsuarios(pagina = 1, limite = 10, busqueda = '', filtro = '') {
         try {
