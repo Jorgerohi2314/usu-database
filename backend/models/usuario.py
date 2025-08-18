@@ -68,7 +68,7 @@ class Usuario(db.Model):
             'edad': self.edad,
             'nacionalidad': self.nacionalidad,
             'documento_identidad': self.documento_identidad,
-            'sexo': self.sexo,
+            "sexo": self.sexo if self.sexo in ["Mujer", "Hombre", " "] else None,
             'direccion': self.direccion,
             'localidad': self.localidad,
             'cp': self.cp,

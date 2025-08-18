@@ -376,14 +376,12 @@ class AppManager {
     }
 }
 
-// Inicializar la aplicación cuando el DOM esté cargado
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('🌐 DOM cargado, inicializando aplicación...');
-    
-    try {
-        window.appManager = new AppManager();
-        console.log('✅ Aplicación inicializada correctamente');
-    } catch (error) {
-        console.error('❌ Error al inicializar la aplicación:', error);
-    }
-});
+// Inicializar la aplicación directamente (los scripts con defer se ejecutan después de que el DOM está cargado)
+console.log('🌐 Inicializando aplicación...');
+
+try {
+    window.appManager = new AppManager();
+    console.log('✅ Aplicación inicializada correctamente');
+} catch (error) {
+    console.error('❌ Error al inicializar la aplicación:', error);
+}

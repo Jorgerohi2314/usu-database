@@ -1,5 +1,5 @@
 // Configuración de la API
-const API_BASE_URL = process.env.API_URL || 'http://127.0.0.1:5000/';
+const API_BASE_URL = 'http://127.0.0.1:5000/';
 
 // Clase para manejar las llamadas a la API
 class ApiService {
@@ -7,7 +7,6 @@ class ApiService {
     static async probarConexion() {
         try {
             const url = `${API_BASE_URL}/`;
-            this.logRequest('GET', url);
             
             const response = await fetch(url);
             console.log(`📡 API Response: ${response.status} ${response.statusText}`);
