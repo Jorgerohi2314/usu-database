@@ -70,6 +70,7 @@ class ApiService {
 
     // Crear un nuevo usuario
     static async crearUsuario(datos) {
+        usuario_existe = Usuario.query.filter_by(email=datos.email).first()
         try {
             const response = await fetch(`${API_BASE_URL}/usuarios`, {
                 method: 'POST',

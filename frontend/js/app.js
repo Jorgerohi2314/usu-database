@@ -21,63 +21,79 @@ class AppManager {
     }
 
     inicializarEventos() {
-        // Navegación
+        // Navegación del sidebar
         document.getElementById('nav-lista').addEventListener('click', (e) => {
             e.preventDefault();
             this.mostrarVista('lista');
+            this.actualizarTitulo('Dashboard');
         });
 
         document.getElementById('nav-nuevo').addEventListener('click', (e) => {
             e.preventDefault();
+            this.formManager.limpiarFormulario();
             this.mostrarVista('formulario');
+            this.actualizarTitulo('Nuevo Usuario');
         });
 
-        // Botones
+        // Botones principales
         document.getElementById('btn-nuevo-usuario').addEventListener('click', () => {
             this.formManager.limpiarFormulario();
             this.mostrarVista('formulario');
+            this.actualizarTitulo('Nuevo Usuario');
         });
 
         document.getElementById('btn-volver').addEventListener('click', () => {
             this.mostrarVista('lista');
+            this.actualizarTitulo('Dashboard');
         });
 
-        document.getElementById('btn-volver-desde-detalles').addEventListener('click', () => {
-            this.mostrarVista('lista');
-        });
-
-        document.getElementById('btn-cancelar').addEventListener('click', () => {
-            if (confirm('¿Estás seguro de que deseas cancelar? Los datos no guardados se perderán.')) {
-                this.mostrarVista('lista');
-            }
-        });
-
-        document.getElementById('btn-editar-desde-detalles').addEventListener('click', () => {
-            const usuarioId = parseInt(document.getElementById('btn-editar-desde-detalles').dataset.usuarioId);
-            this.formManager.cargarUsuario(usuarioId);
-            this.mostrarVista('formulario');
-        });
-
-        document.getElementById('btn-generar-pdf').addEventListener('click', async () => {
-            const usuarioId = parseInt(document.getElementById('btn-generar-pdf').dataset.usuarioId);
-            try {
-                await ApiService.generarPDF(usuarioId);
-                this.formManager.mostrarNotificacion('PDF generado correctamente', 'success');
-            } catch (error) {
-                this.formManager.mostrarNotificacion(`Error al generar PDF: ${error.message}`, 'error');
-            }
+        // Toggle sidebar
+        document.getElementById('btn-toggle-sidebar').addEventListener('click', () => {
+            this.toggleSidebar();
         });
 
         // Búsqueda y filtros
-        document.getElementById('busqueda').addEventListener('input', this.debounce(() => {
-            this.paginaActual = 1;
-            this.cargarUsuarios();
-        }, 500));
+        const busquedaElement = document.getElementById('busqueda');
+        const busquedaGlobalElement = document.getElementById('busqueda-global');
+        
+        if (busquedaElement) {
+            busquedaElement.addEventListener('input', this.debounce(() => {
+                this.paginaActual = 1;
+                this.cargarUsuarios();
+            }, 500));
+        }
+        
+        if (busquedaGlobalElement) {
+            busquedaGlobalElement.addEventListener('input', this.debounce(() => {
+                this.paginaActual = 1;
+                this.cargarUsuarios();
+            }, 500));
+        }
 
-        document.getElementById('filtro-colectivo').addEventListener('change', () => {
-            this.paginaActual = 1;
-            this.cargarUsuarios();
-        });
+        const filtroColectivo = document.getElementById('filtro-colectivo');
+        if (filtroColectivo) {
+            filtroColectivo.addEventListener('change', () => {
+                this.paginaActual = 1;
+                this.cargarUsuarios();
+            });
+        }
+    }
+
+    toggleSidebar() {
+        const sidebar = document.querySelector('.sidebar');
+        const mainContent = document.querySelector('.main-content');
+        const topHeader = document.querySelector('.top-header');
+        
+        sidebar.classList.toggle('collapsed');
+        mainContent.classList.toggle('expanded');
+        topHeader.classList.toggle('expanded');
+    }
+
+    actualizarTitulo(titulo) {
+        const pageTitle = document.getElementById('page-title');
+        if (pageTitle) {
+            pageTitle.textContent = titulo;
+        }
     }
 
     debounce(func, wait) {
@@ -99,10 +115,13 @@ class AppManager {
         });
 
         // Mostrar la vista seleccionada
-        document.getElementById(`vista-${vista}`).classList.remove('d-none');
+        const vistaElement = document.getElementById(`vista-${vista}`);
+        if (vistaElement) {
+            vistaElement.classList.remove('d-none');
+        }
 
-        // Actualizar navegación
-        document.querySelectorAll('.nav-link').forEach(link => {
+        // Actualizar navegación del sidebar
+        document.querySelectorAll('.sidebar-nav .nav-link').forEach(link => {
             link.classList.remove('active');
         });
 
@@ -117,20 +136,24 @@ class AppManager {
 
     async cargarUsuarios() {
         try {
-            const busqueda = document.getElementById('busqueda').value;
-            const filtro = document.getElementById('filtro-colectivo').value;
+            const busqueda = document.getElementById('busqueda')?.value || '';
+            const filtro = document.getElementById('filtro-colectivo')?.value || '';
             
             // Mostrar indicador de carga
             const tablaBody = document.getElementById('tabla-usuarios');
-            tablaBody.innerHTML = `
-                <tr>
-                    <td colspan="6" class="text-center">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Cargando...</span>
-                        </div>
-                    </td>
-                </tr>
-            `;
+            if (tablaBody) {
+                tablaBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center">
+                            <div class="cargando">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Cargando...</span>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
 
             // Obtener usuarios
             const usuarios = await ApiService.obtenerUsuarios(this.paginaActual, 10, busqueda, filtro);
@@ -138,6 +161,9 @@ class AppManager {
 
             // Renderizar tabla
             this.renderizarTabla(usuarios);
+
+            // Actualizar estadísticas
+            this.actualizarEstadisticas(usuarios);
 
             // Renderizar paginación
             this.renderizarPaginacion();
@@ -148,24 +174,56 @@ class AppManager {
             
             // Mostrar error en la tabla
             const tablaBody = document.getElementById('tabla-usuarios');
-            tablaBody.innerHTML = `
-                <tr>
-                    <td colspan="6" class="text-center text-danger">
-                        Error al cargar los usuarios
-                    </td>
-                </tr>
-            `;
+            if (tablaBody) {
+                tablaBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center text-danger">
+                            Error al cargar los usuarios
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+    }
+
+    actualizarEstadisticas(usuarios) {
+        // Actualizar contador total
+        const totalElement = document.getElementById('total-usuarios');
+        if (totalElement) {
+            totalElement.textContent = usuarios.length;
+        }
+
+        // Actualizar mostrando usuarios
+        const mostrandoElement = document.getElementById('mostrando-usuarios');
+        if (mostrandoElement) {
+            mostrandoElement.textContent = usuarios.length;
+        }
+
+        // Simular otras estadísticas
+        const usuariosMesElement = document.getElementById('usuarios-mes');
+        if (usuariosMesElement) {
+            usuariosMesElement.textContent = Math.floor(usuarios.length * 0.3);
+        }
+
+        const usuariosInactivosElement = document.getElementById('usuarios-inactivos');
+        if (usuariosInactivosElement) {
+            usuariosInactivosElement.textContent = Math.floor(usuarios.length * 0.1);
         }
     }
 
     renderizarTabla(usuarios) {
         const tablaBody = document.getElementById('tabla-usuarios');
         
+        if (!tablaBody) return;
+        
         if (usuarios.length === 0) {
             tablaBody.innerHTML = `
                 <tr>
                     <td colspan="6" class="text-center">
-                        No se encontraron usuarios
+                        <div class="text-muted">
+                            <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                            No se encontraron usuarios
+                        </div>
                     </td>
                 </tr>
             `;
@@ -173,24 +231,44 @@ class AppManager {
         }
 
         tablaBody.innerHTML = usuarios.map(usuario => `
-            <tr onclick="appManager.verDetalles(${usuario.id})">
-                <td>${usuario.id}</td>
-                <td>${usuario.nombre} ${usuario.apellidos}</td>
-                <td>${usuario.email}</td>
-                <td>${usuario.telefono1 || '-'}</td>
-                <td>${usuario.colectivo || '-'}</td>
+            <tr>
                 <td>
-                    <div class="btn-group btn-group-sm" onclick="event.stopPropagation()">
-                        <button class="btn btn-outline-primary btn-accion" onclick="appManager.verDetalles(${usuario.id})" title="Ver detalles">
-                            <i class="bi bi-eye"></i>
-                        </button>
-                        <button class="btn btn-outline-warning btn-accion" onclick="appManager.editarUsuario(${usuario.id})" title="Editar">
+                    <div class="th-content">
+                        <input type="checkbox" class="form-check-input">
+                    </div>
+                </td>
+                <td>
+                    <div class="user-info">
+                        <div class="user-name">${usuario.nombre} ${usuario.apellidos}</div>
+                        <div class="user-email">${usuario.email}</div>
+                    </div>
+                </td>
+                <td>
+                    <div class="contact-info">
+                        ${usuario.telefono1 ? `<div><i class="bi bi-telephone"></i> ${usuario.telefono1}</div>` : ''}
+                        ${usuario.telefono2 ? `<div><i class="bi bi-telephone-fill"></i> ${usuario.telefono2}</div>` : ''}
+                    </div>
+                </td>
+                <td>
+                    <span class="status-badge ${usuario.colectivo ? 'active' : 'inactive'}">
+                        ${usuario.colectivo || 'Sin asignar'}
+                    </span>
+                </td>
+                <td>
+                    <span class="status-badge active">Activo</span>
+                </td>
+                <td>
+                    <div class="table-actions">
+                        <button class="btn-icon" onclick="appManager.editarUsuario(${usuario.id})" title="Editar">
                             <i class="bi bi-pencil"></i>
                         </button>
-                        <button class="btn btn-outline-info btn-accion" onclick="appManager.generarPDF(${usuario.id})" title="Generar PDF">
+                        <button class="btn-icon" onclick="appManager.verDetalles(${usuario.id})" title="Ver detalles">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                        <button class="btn-icon" onclick="appManager.generarPDF(${usuario.id})" title="Generar PDF">
                             <i class="bi bi-file-earmark-pdf"></i>
                         </button>
-                        <button class="btn btn-outline-danger btn-accion" onclick="appManager.eliminarUsuario(${usuario.id})" title="Eliminar">
+                        <button class="btn-icon" onclick="appManager.eliminarUsuario(${usuario.id})" title="Eliminar">
                             <i class="bi bi-trash"></i>
                         </button>
                     </div>
@@ -202,6 +280,8 @@ class AppManager {
     renderizarPaginacion() {
         const paginacion = document.getElementById('paginacion');
         
+        if (!paginacion) return;
+        
         // Calcular total de páginas (simulado, en una API real vendría en la respuesta)
         this.totalPaginas = Math.ceil(this.usuarios.length / 10) || 1;
         
@@ -210,7 +290,9 @@ class AppManager {
         // Botón anterior
         html += `
             <li class="page-item ${this.paginaActual === 1 ? 'disabled' : ''}">
-                <a class="page-link" href="#" onclick="appManager.cambiarPagina(${this.paginaActual - 1})">Anterior</a>
+                <a class="page-link" href="#" onclick="appManager.cambiarPagina(${this.paginaActual - 1})">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
             </li>
         `;
         
@@ -230,7 +312,9 @@ class AppManager {
         // Botón siguiente
         html += `
             <li class="page-item ${this.paginaActual === this.totalPaginas ? 'disabled' : ''}">
-                <a class="page-link" href="#" onclick="appManager.cambiarPagina(${this.paginaActual + 1})">Siguiente</a>
+                <a class="page-link" href="#" onclick="appManager.cambiarPagina(${this.paginaActual + 1})">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
             </li>
         `;
         
@@ -247,111 +331,113 @@ class AppManager {
     async verDetalles(id) {
         try {
             const usuario = await ApiService.obtenerUsuario(id);
-            this.renderizarDetalles(usuario);
-            this.mostrarVista('detalles');
-            
-            // Configurar botones
-            document.getElementById('btn-editar-desde-detalles').dataset.usuarioId = id;
-            document.getElementById('btn-generar-pdf').dataset.usuarioId = id;
-            
+            // En el nuevo diseño, los detalles se muestran en un modal o sidebar
+            this.mostrarModalDetalles(usuario);
         } catch (error) {
             console.error('Error al cargar detalles:', error);
             this.formManager.mostrarNotificacion(`Error al cargar detalles: ${error.message}`, 'error');
         }
     }
 
-    renderizarDetalles(usuario) {
-        const contenido = document.getElementById('contenido-detalles');
-        
-        contenido.innerHTML = `
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="card card-detalle mb-3">
-                        <div class="card-header">Datos Personales</div>
-                        <div class="card-body">
-                            <p><strong>Nombre completo:</strong> ${usuario.nombre} ${usuario.apellidos}</p>
-                            <p><strong>Fecha de nacimiento:</strong> ${usuario.fecha_nacimiento ? new Date(usuario.fecha_nacimiento).toLocaleDateString() : 'No especificado'}</p>
-                            <p><strong>Edad:</strong> ${usuario.edad || 'No especificada'}</p>
-                            <p><strong>Nacionalidad:</strong> ${usuario.nacionalidad || 'No especificada'}</p>
-                            <p><strong>Documento de identidad:</strong> ${usuario.documento_identidad || 'No especificado'}</p>
-                            <p><strong>Sexo:</strong> ${usuario.sexo || 'No especificado'}</p>
-                            <p><strong>Dirección:</strong> ${usuario.direccion || 'No especificada'}</p>
-                            <p><strong>Localidad:</strong> ${usuario.localidad || 'No especificada'}</p>
-                            <p><strong>Código Postal:</strong> ${usuario.cp || 'No especificado'}</p>
-                            <p><strong>Email:</strong> ${usuario.email}</p>
-                            <p><strong>Teléfono 1:</strong> ${usuario.telefono1 || 'No especificado'}</p>
-                            <p><strong>Teléfono 2:</strong> ${usuario.telefono2 || 'No especificado'}</p>
-                            <p><strong>Carnet de conducir:</strong> ${usuario.carnet || 'No tiene'}</p>
-                            <p><strong>Vehículo propio:</strong> ${usuario.vehiculo_propio ? 'Sí' : 'No'}</p>
-                            <p><strong>% Discapacidad:</strong> ${usuario.discapacidad_porcentaje || 'No especificado'}</p>
-                            <p><strong>Tipo discapacidad:</strong> ${usuario.discapacidad_tipo || 'No especificado'}</p>
+    mostrarModalDetalles(usuario) {
+        // Crear modal para mostrar detalles
+        const modalHTML = `
+            <div class="modal fade" id="modalDetalles" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Detalles del Usuario</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                         </div>
-                    </div>
-                </div>
-                
-                <div class="col-md-6">
-                    <div class="card card-detalle mb-3">
-                        <div class="card-header">Datos Socio-Familiares</div>
-                        <div class="card-body">
-                            <p><strong>Entidad de derivación:</strong> ${usuario.entidad_derivacion || 'No especificada'}</p>
-                            <p><strong>Técnico/a de derivación:</strong> ${usuario.tecnico_derivacion || 'No especificado'}</p>
-                            <p><strong>Colectivo:</strong> ${usuario.colectivo || 'No especificado'}</p>
-                            <p><strong>Composición familiar:</strong> ${usuario.composicion_familiar || 'No especificada'}</p>
-                            <p><strong>Situación económica:</strong> ${usuario.situacion_economica || 'No especificada'}</p>
-                            <p><strong>Otras situaciones:</strong> ${usuario.otras_situaciones || 'No especificadas'}</p>
+                        <div class="modal-body">
+                            ${this.generarHTMLDetalles(usuario)}
                         </div>
-                    </div>
-                    
-                    <div class="card card-detalle mb-3">
-                        <div class="card-header">Datos Formativos</div>
-                        <div class="card-body">
-                            <p><strong>Formación académica:</strong> ${usuario.formacion_academica || 'No especificada'}</p>
-                            <p><strong>Año de finalización:</strong> ${usuario.ano_finalizacion || 'No especificado'}</p>
-                            <p><strong>Idiomas:</strong> ${usuario.idiomas || 'No especificados'}</p>
-                            <p><strong>Informática:</strong> ${usuario.informatica || 'No especificada'}</p>
-                            <p><strong>Experiencia laboral previa:</strong> ${usuario.experiencia_laboral_previa || 'No especificada'}</p>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                            <button type="button" class="btn btn-primary" onclick="appManager.editarUsuario(${usuario.id}); bootstrap.Modal.getInstance(document.getElementById('modalDetalles')).hide();">
+                                Editar
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
-            
-            ${usuario.formacion_complementaria && usuario.formacion_complementaria.length > 0 ? `
-                <div class="card card-detalle mb-3">
-                    <div class="card-header">Formación Complementaria</div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>Curso</th>
-                                        <th>Duración</th>
-                                        <th>Horas</th>
-                                        <th>Entidad</th>
-                                        <th>Fecha realización</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${usuario.formacion_complementaria.map(curso => `
-                                        <tr>
-                                            <td>${curso.nombre_curso}</td>
-                                            <td>${curso.duracion || '-'}</td>
-                                            <td>${curso.horas || '-'}</td>
-                                            <td>${curso.entidad || '-'}</td>
-                                            <td>${curso.fecha_realizacion ? new Date(curso.fecha_realizacion).toLocaleDateString() : '-'}</td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
+        `;
+        
+        // Eliminar modal existente si hay uno
+        const modalExistente = document.getElementById('modalDetalles');
+        if (modalExistente) {
+            modalExistente.remove();
+        }
+        
+        // Añadir nuevo modal
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        // Mostrar modal
+        const modal = new bootstrap.Modal(document.getElementById('modalDetalles'));
+        modal.show();
+    }
+
+    generarHTMLDetalles(usuario) {
+        return `
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card mb-3">
+                        <div class="card-header bg-primary text-white">
+                            <h6 class="mb-0">Datos Personales</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-6"><strong>Nombre:</strong></div>
+                                <div class="col-6">${usuario.nombre} ${usuario.apellidos}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-6"><strong>Email:</strong></div>
+                                <div class="col-6">${usuario.email}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-6"><strong>Teléfono:</strong></div>
+                                <div class="col-6">${usuario.telefono1 || 'No especificado'}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-6"><strong>Edad:</strong></div>
+                                <div class="col-6">${usuario.edad || 'No especificada'}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-6"><strong>Sexo:</strong></div>
+                                <div class="col-6">${usuario.sexo || 'No especificado'}</div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            ` : ''}
+                <div class="col-md-6">
+                    <div class="card mb-3">
+                        <div class="card-header bg-success text-white">
+                            <h6 class="mb-0">Datos Socio-Familiares</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-6"><strong>Colectivo:</strong></div>
+                                <div class="col-6">${usuario.colectivo || 'No especificado'}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-6"><strong>Entidad derivación:</strong></div>
+                                <div class="col-6">${usuario.entidad_derivacion || 'No especificada'}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-6"><strong>Técnico derivación:</strong></div>
+                                <div class="col-6">${usuario.tecnico_derivacion || 'No especificado'}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         `;
     }
 
     editarUsuario(id) {
         this.formManager.cargarUsuario(id);
         this.mostrarVista('formulario');
+        this.actualizarTitulo('Editar Usuario');
     }
 
     async generarPDF(id) {
@@ -368,7 +454,7 @@ class AppManager {
             try {
                 await ApiService.eliminarUsuario(id);
                 this.formManager.mostrarNotificacion('Usuario eliminado correctamente', 'success');
-                this.cargarUsuarios();
+                this.cargarUsuarios(); // Recargar la lista
             } catch (error) {
                 this.formManager.mostrarNotificacion(`Error al eliminar usuario: ${error.message}`, 'error');
             }
@@ -376,12 +462,9 @@ class AppManager {
     }
 }
 
-// Inicializar la aplicación directamente (los scripts con defer se ejecutan después de que el DOM está cargado)
-console.log('🌐 Inicializando aplicación...');
-
-try {
+// Inicializar la aplicación cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('🎬 Inicializando aplicación...');
     window.appManager = new AppManager();
-    console.log('✅ Aplicación inicializada correctamente');
-} catch (error) {
-    console.error('❌ Error al inicializar la aplicación:', error);
-}
+    console.log('✅ Aplicación lista');
+});

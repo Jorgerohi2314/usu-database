@@ -1,13 +1,16 @@
-// Clase para manejar los formularios
+// Clase para manejar los formularios con el nuevo diseño
 class FormManager {
     constructor() {
         console.log('🏗️ Creando instancia de FormManager...');
         
         this.formulario = document.getElementById('formulario-usuario');
-        console.log('📝 Formulario encontrado:', this.formulario);
-        
         this.usuarioId = null;
+        this.pasoActual = 1;
+        this.totalPasos = 4;
+        
+        console.log('📝 Formulario encontrado:', this.formulario);
         console.log('🆔 ID de usuario inicializado en:', this.usuarioId);
+        console.log('📊 Paso actual:', this.pasoActual, 'de', this.totalPasos);
         
         this.inicializarEventos();
         console.log('✅ FormManager inicializado correctamente');
@@ -64,18 +67,30 @@ class FormManager {
         // Eventos para eliminar elementos dinámicos
         document.addEventListener('click', (e) => {
             if (e.target.closest('.btn-eliminar-miembro')) {
-                this.eliminarMiembroPerceptor(e.target.closest('.miembro-perceptor'));
+                this.eliminarMiembroPerceptor(e.target.closest('.dynamic-item'));
             }
             
             if (e.target.closest('.btn-eliminar-curso')) {
-                this.eliminarCurso(e.target.closest('.curso-item'));
+                this.eliminarCurso(e.target.closest('.dynamic-item'));
             }
         });
 
+        // Eventos de navegación del formulario
+        const btnSiguiente = document.getElementById('btn-siguiente');
+        if (btnSiguiente) {
+            btnSiguiente.addEventListener('click', () => {
+                this.siguientePaso();
+            });
+        }
+
+        const btnAnterior = document.getElementById('btn-anterior');
+        if (btnAnterior) {
+            btnAnterior.addEventListener('click', () => {
+                this.anteriorPaso();
+            });
+        }
+
         // Calcular edad automáticamente al cambiar la fecha de nacimiento
-        document.getElementById('fecha_nacimiento').addEventListener('change', (e) => {
-            this.calcularEdad(e.target.value);
-        });
         const fechaNacimiento = document.getElementById('fecha_nacimiento');
         if (fechaNacimiento) {
             fechaNacimiento.addEventListener('change', (e) => {
@@ -83,6 +98,127 @@ class FormManager {
                 this.calcularEdad(e.target.value);
             });
         }
+
+        // Eventos para los indicadores de paso
+        document.querySelectorAll('.step-indicator').forEach(indicator => {
+            indicator.addEventListener('click', () => {
+                const paso = parseInt(indicator.dataset.step);
+                if (paso < this.pasoActual || this.validarPasoActual()) {
+                    this.irAPaso(paso);
+                }
+            });
+        });
+    }
+
+    // Métodos de navegación del formulario
+    siguientePaso() {
+        if (this.pasoActual < this.totalPasos) {
+            if (this.validarPasoActual()) {
+                this.pasoActual++;
+                this.actualizarPaso();
+            }
+        } else {
+            // Estamos en el último paso, guardar formulario
+            this.guardarUsuario();
+        }
+    }
+
+    anteriorPaso() {
+        if (this.pasoActual > 1) {
+            this.pasoActual--;
+            this.actualizarPaso();
+        }
+    }
+
+    irAPaso(paso) {
+        if (paso >= 1 && paso <= this.totalPasos) {
+            this.pasoActual = paso;
+            this.actualizarPaso();
+        }
+    }
+
+    actualizarPaso() {
+        // Ocultar todos los pasos
+        document.querySelectorAll('.form-step').forEach(step => {
+            step.classList.remove('active');
+        });
+
+        // Mostrar paso actual
+        const pasoActualElement = document.getElementById(`step-${this.pasoActual}`);
+        if (pasoActualElement) {
+            pasoActualElement.classList.add('active');
+        }
+
+        // Actualizar stepper
+        document.querySelectorAll('.stepper-item').forEach((item, index) => {
+            if (index + 1 < this.pasoActual) {
+                item.classList.add('completed');
+                item.classList.remove('active');
+            } else if (index + 1 === this.pasoActual) {
+                item.classList.add('active');
+                item.classList.remove('completed');
+            } else {
+                item.classList.remove('active', 'completed');
+            }
+        });
+
+        // Actualizar indicadores
+        document.querySelectorAll('.step-indicator').forEach((indicator, index) => {
+            if (index + 1 === this.pasoActual) {
+                indicator.classList.add('active');
+            } else {
+                indicator.classList.remove('active');
+            }
+        });
+
+        // Actualizar botones de navegación
+        const btnAnterior = document.getElementById('btn-anterior');
+        const btnSiguiente = document.getElementById('btn-siguiente');
+
+        if (btnAnterior) {
+            btnAnterior.style.display = this.pasoActual === 1 ? 'none' : 'flex';
+        }
+
+        if (btnSiguiente) {
+            if (this.pasoActual === this.totalPasos) {
+                btnSiguiente.innerHTML = '<i class="bi bi-check-lg"></i> Guardar';
+                btnSiguiente.classList.remove('btn-primary');
+                btnSiguiente.classList.add('btn-success');
+            } else {
+                btnSiguiente.innerHTML = 'Siguiente <i class="bi bi-arrow-right"></i>';
+                btnSiguiente.classList.remove('btn-success');
+                btnSiguiente.classList.add('btn-primary');
+            }
+        }
+
+        // Scroll al inicio del formulario
+        pasoActualElement?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    validarPasoActual() {
+        const pasoActualElement = document.getElementById(`step-${this.pasoActual}`);
+        const camposRequeridos = pasoActualElement.querySelectorAll('[required]');
+        
+        for (let campo of camposRequeridos) {
+            if (!campo.value.trim()) {
+                this.mostrarNotificacion(`Por favor complete el campo: ${campo.previousElementSibling.textContent}`, 'warning');
+                campo.focus();
+                return false;
+            }
+        }
+
+        // Validación específica para el paso 1 (Datos Personales)
+        if (this.pasoActual === 1) {
+            const email = document.getElementById('email').value;
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                this.mostrarNotificación('Por favor ingrese un email válido', 'warning');
+                document.getElementById('email').focus();
+                return false;
+            }
+        }
+
+        return true;
     }
 
     calcularEdad(fechaNacimiento) {
@@ -97,84 +233,165 @@ class FormManager {
             edad--;
         }
         
-        document.getElementById('edad').value = edad;
+        const edadCampo = document.getElementById('edad');
+        if (edadCampo) {
+            edadCampo.value = edad;
+        }
     }
 
     agregarMiembroPerceptor() {
         const container = document.getElementById('miembros-perceptores');
         const nuevoMiembro = document.createElement('div');
-        nuevoMiembro.className = 'row mb-2 miembro-perceptor';
+        nuevoMiembro.className = 'dynamic-item';
+        
+        const numeroMiembros = container.children.length + 1;
+        
         nuevoMiembro.innerHTML = `
-            <div class="col-md-3">
-                <input type="number" class="form-control" placeholder="Número" min="1">
-            </div>
-            <div class="col-md-5">
-                <input type="text" class="form-control" placeholder="Tipo (ej: Prestación)">
-            </div>
-            <div class="col-md-3">
-                <input type="text" class="form-control" placeholder="Cantidad">
-            </div>
-            <div class="col-md-1">
-                <button type="button" class="btn btn-danger btn-sm btn-eliminar-miembro">
+            <div class="dynamic-item-header">
+                <h6>Miembro ${numeroMiembros}</h6>
+                <button type="button" class="btn-remove btn-eliminar-miembro" title="Eliminar">
                     <i class="bi bi-trash"></i>
                 </button>
             </div>
+            <div class="dynamic-item-content">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Número</label>
+                        <input type="number" class="form-control" placeholder="Número" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tipo</label>
+                        <input type="text" class="form-control" placeholder="Tipo (ej: Prestación)">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Cantidad</label>
+                        <input type="text" class="form-control" placeholder="Cantidad">
+                    </div>
+                </div>
+            </div>
         `;
+        
         container.appendChild(nuevoMiembro);
+        
+        // Animación de entrada
+        nuevoMiembro.style.opacity = '0';
+        nuevoMiembro.style.transform = 'translateY(-10px)';
+        setTimeout(() => {
+            nuevoMiembro.style.transition = 'all 0.3s ease';
+            nuevoMiembro.style.opacity = '1';
+            nuevoMiembro.style.transform = 'translateY(0)';
+        }, 10);
     }
 
     eliminarMiembroPerceptor(elemento) {
         const container = document.getElementById('miembros-perceptores');
         if (container.children.length > 1) {
-            elemento.remove();
+            elemento.style.transition = 'all 0.3s ease';
+            elemento.style.opacity = '0';
+            elemento.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                elemento.remove();
+                this.actualizarNumerosMiembros();
+            }, 300);
         } else {
             this.mostrarNotificacion('Debe haber al menos un miembro perceptor', 'warning');
         }
     }
 
+    actualizarNumerosMiembros() {
+        const container = document.getElementById('miembros-perceptores');
+        Array.from(container.children).forEach((miembro, index) => {
+            const header = miembro.querySelector('.dynamic-item-header h6');
+            if (header) {
+                header.textContent = `Miembro ${index + 1}`;
+            }
+        });
+    }
+
     agregarCurso() {
         const container = document.getElementById('formacion-complementaria-lista');
         const plantilla = document.getElementById('plantilla-curso');
+        
+        if (!plantilla) {
+            console.error('❌ Plantilla de curso no encontrada');
+            return;
+        }
+        
         const nuevoCurso = plantilla.cloneNode(true);
         nuevoCurso.id = '';
         nuevoCurso.classList.remove('d-none');
+        
         container.appendChild(nuevoCurso);
+        
+        // Animación de entrada
+        nuevoCurso.style.opacity = '0';
+        nuevoCurso.style.transform = 'translateY(-10px)';
+        setTimeout(() => {
+            nuevoCurso.style.transition = 'all 0.3s ease';
+            nuevoCurso.style.opacity = '1';
+            nuevoCurso.style.transform = 'translateY(0)';
+        }, 10);
     }
 
     eliminarCurso(elemento) {
-        elemento.remove();
+        elemento.style.transition = 'all 0.3s ease';
+        elemento.style.opacity = '0';
+        elemento.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            elemento.remove();
+        }, 300);
     }
 
     limpiarFormulario() {
         this.formulario.reset();
         this.usuarioId = null;
+        this.pasoActual = 1;
+        this.actualizarPaso();
         
         // Limpiar miembros perceptores
         const containerMiembros = document.getElementById('miembros-perceptores');
-        containerMiembros.innerHTML = `
-            <div class="row mb-2 miembro-perceptor">
-                <div class="col-md-3">
-                    <input type="number" class="form-control" placeholder="Número" min="1">
+        if (containerMiembros) {
+            containerMiembros.innerHTML = `
+                <div class="dynamic-item">
+                    <div class="dynamic-item-header">
+                        <h6>Miembro 1</h6>
+                        <button type="button" class="btn-remove btn-eliminar-miembro" title="Eliminar">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                    <div class="dynamic-item-content">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Número</label>
+                                <input type="number" class="form-control" placeholder="Número" min="1">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Tipo</label>
+                                <input type="text" class="form-control" placeholder="Tipo (ej: Prestación)">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Cantidad</label>
+                                <input type="text" class="form-control" placeholder="Cantidad">
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="col-md-5">
-                    <input type="text" class="form-control" placeholder="Tipo (ej: Prestación)">
-                </div>
-                <div class="col-md-3">
-                    <input type="text" class="form-control" placeholder="Cantidad">
-                </div>
-                <div class="col-md-1">
-                    <button type="button" class="btn btn-danger btn-sm btn-eliminar-miembro">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </div>
-            </div>
-        `;
+            `;
+        }
         
         // Limpiar formación complementaria
-        document.getElementById('formacion-complementaria-lista').innerHTML = '';
+        const containerFormacion = document.getElementById('formacion-complementaria-lista');
+        if (containerFormacion) {
+            containerFormacion.innerHTML = '';
+        }
         
         // Actualizar título
-        document.getElementById('titulo-formulario').textContent = 'Nuevo Usuario';
+        const tituloFormulario = document.getElementById('titulo-formulario');
+        if (tituloFormulario) {
+            tituloFormulario.textContent = 'Nuevo Usuario';
+        }
+        
+        this.mostrarNotificacion('Formulario limpiado', 'info');
     }
 
     async cargarUsuario(id) {
@@ -183,34 +400,34 @@ class FormManager {
             this.usuarioId = id;
             
             // Cargar datos básicos
-            document.getElementById('nombre').value = usuario.nombre || '';
-            document.getElementById('apellidos').value = usuario.apellidos || '';
-            document.getElementById('fecha_nacimiento').value = usuario.fecha_nacimiento ? usuario.fecha_nacimiento.split('T')[0] : '';
-            document.getElementById('edad').value = usuario.edad || '';
-            document.getElementById('nacionalidad').value = usuario.nacionalidad || '';
-            document.getElementById('documento_identidad').value = usuario.documento_identidad || '';
-            document.getElementById('sexo').value = usuario.sexo || '';
-            document.getElementById('direccion').value = usuario.direccion || '';
-            document.getElementById('localidad').value = usuario.localidad || '';
-            document.getElementById('cp').value = usuario.cp || '';
-            document.getElementById('email').value = usuario.email || '';
-            document.getElementById('telefono1').value = usuario.telefono1 || '';
-            document.getElementById('telefono2').value = usuario.telefono2 || '';
-            document.getElementById('carnet').value = usuario.carnet || '';
-            document.getElementById('vehiculo_propio').checked = usuario.vehiculo_propio || false;
-            document.getElementById('discapacidad_porcentaje').value = usuario.discapacidad_porcentaje || '';
-            document.getElementById('discapacidad_tipo').value = usuario.discapacidad_tipo || '';
-            document.getElementById('entidad_derivacion').value = usuario.entidad_derivacion || '';
-            document.getElementById('tecnico_derivacion').value = usuario.tecnico_derivacion || '';
-            document.getElementById('colectivo').value = usuario.colectivo || '';
-            document.getElementById('composicion_familiar').value = usuario.composicion_familiar || '';
-            document.getElementById('situacion_economica').value = usuario.situacion_economica || '';
-            document.getElementById('otras_situaciones').value = usuario.otras_situaciones || '';
-            document.getElementById('formacion_academica').value = usuario.formacion_academica || '';
-            document.getElementById('ano_finalizacion').value = usuario.ano_finalizacion || '';
-            document.getElementById('idiomas').value = usuario.idiomas || '';
-            document.getElementById('informatica').value = usuario.informatica || '';
-            document.getElementById('experiencia_laboral_previa').value = usuario.experiencia_laboral_previa || '';
+            this.campoValor('nombre', usuario.nombre);
+            this.campoValor('apellidos', usuario.apellidos);
+            this.campoValor('fecha_nacimiento', usuario.fecha_nacimiento ? usuario.fecha_nacimiento.split('T')[0] : '');
+            this.campoValor('edad', usuario.edad);
+            this.campoValor('nacionalidad', usuario.nacionalidad);
+            this.campoValor('documento_identidad', usuario.documento_identidad);
+            this.campoValor('sexo', usuario.sexo);
+            this.campoValor('direccion', usuario.direccion);
+            this.campoValor('localidad', usuario.localidad);
+            this.campoValor('cp', usuario.cp);
+            this.campoValor('email', usuario.email);
+            this.campoValor('telefono1', usuario.telefono1);
+            this.campoValor('telefono2', usuario.telefono2);
+            this.campoValor('carnet', usuario.carnet);
+            this.setCheckboxValue('vehiculo_propio', usuario.vehiculo_propio);
+            this.campoValor('discapacidad_porcentaje', usuario.discapacidad_porcentaje);
+            this.campoValor('discapacidad_tipo', usuario.discapacidad_tipo);
+            this.campoValor('entidad_derivacion', usuario.entidad_derivacion);
+            this.campoValor('tecnico_derivacion', usuario.tecnico_derivacion);
+            this.campoValor('colectivo', usuario.colectivo);
+            this.campoValor('composicion_familiar', usuario.composicion_familiar);
+            this.campoValor('situacion_economica', usuario.situacion_economica);
+            this.campoValor('otras_situaciones', usuario.otras_situaciones);
+            this.campoValor('formacion_academica', usuario.formacion_academica);
+            this.campoValor('ano_finalizacion', usuario.ano_finalizacion);
+            this.campoValor('idiomas', usuario.idiomas);
+            this.campoValor('informatica', usuario.informatica);
+            this.campoValor('experiencia_laboral_previa', usuario.experiencia_laboral_previa);
             
             // Cargar miembros perceptores
             if (usuario.miembros_perceptores) {
@@ -219,23 +436,31 @@ class FormManager {
                     const container = document.getElementById('miembros-perceptores');
                     container.innerHTML = '';
                     
-                    miembros.forEach(miembro => {
+                    miembros.forEach((miembro, index) => {
                         const nuevoMiembro = document.createElement('div');
-                        nuevoMiembro.className = 'row mb-2 miembro-perceptor';
+                        nuevoMiembro.className = 'dynamic-item';
                         nuevoMiembro.innerHTML = `
-                            <div class="col-md-3">
-                                <input type="number" class="form-control" placeholder="Número" min="1" value="${miembro.numero || ''}">
-                            </div>
-                            <div class="col-md-5">
-                                <input type="text" class="form-control" placeholder="Tipo (ej: Prestación)" value="${miembro.tipo || ''}">
-                            </div>
-                            <div class="col-md-3">
-                                <input type="text" class="form-control" placeholder="Cantidad" value="${miembro.cantidad || ''}">
-                            </div>
-                            <div class="col-md-1">
-                                <button type="button" class="btn btn-danger btn-sm btn-eliminar-miembro">
+                            <div class="dynamic-item-header">
+                                <h6>Miembro ${index + 1}</h6>
+                                <button type="button" class="btn-remove btn-eliminar-miembro" title="Eliminar">
                                     <i class="bi bi-trash"></i>
                                 </button>
+                            </div>
+                            <div class="dynamic-item-content">
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label class="form-label">Número</label>
+                                        <input type="number" class="form-control" placeholder="Número" min="1" value="${miembro.numero || ''}">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Tipo</label>
+                                        <input type="text" class="form-control" placeholder="Tipo (ej: Prestación)" value="${miembro.tipo || ''}">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Cantidad</label>
+                                        <input type="text" class="form-control" placeholder="Cantidad" value="${miembro.cantidad || ''}">
+                                    </div>
+                                </div>
                             </div>
                         `;
                         container.appendChild(nuevoMiembro);
@@ -256,22 +481,49 @@ class FormManager {
                     nuevoCurso.id = '';
                     nuevoCurso.classList.remove('d-none');
                     
-                    nuevoCurso.querySelector('.nombre-curso').value = curso.nombre_curso || '';
-                    nuevoCurso.querySelector('.duracion-curso').value = curso.duracion || '';
-                    nuevoCurso.querySelector('.horas-curso').value = curso.horas || '';
-                    nuevoCurso.querySelector('.entidad-curso').value = curso.entidad || '';
-                    nuevoCurso.querySelector('.fecha-curso').value = curso.fecha_realizacion ? curso.fecha_realizacion.split('T')[0] : '';
+                    this.campoValorEnElemento(nuevoCurso.querySelector('.nombre-curso'), curso.nombre_curso);
+                    this.campoValorEnElemento(nuevoCurso.querySelector('.duracion-curso'), curso.duracion);
+                    this.campoValorEnElemento(nuevoCurso.querySelector('.horas-curso'), curso.horas);
+                    this.campoValorEnElemento(nuevoCurso.querySelector('.entidad-curso'), curso.entidad);
+                    this.campoValorEnElemento(nuevoCurso.querySelector('.fecha-curso'), curso.fecha_realizacion ? curso.fecha_realizacion.split('T')[0] : '');
                     
                     container.appendChild(nuevoCurso);
                 });
             }
             
             // Actualizar título
-            document.getElementById('titulo-formulario').textContent = 'Editar Usuario';
+            const tituloFormulario = document.getElementById('titulo-formulario');
+            if (tituloFormulario) {
+                tituloFormulario.textContent = 'Editar Usuario';
+            }
+            
+            // Volver al primer paso
+            this.pasoActual = 1;
+            this.actualizarPaso();
             
         } catch (error) {
             console.error('Error al cargar usuario:', error);
             this.mostrarNotificacion('Error al cargar los datos del usuario', 'error');
+        }
+    }
+
+    campoValor(campoId, valor) {
+        const campo = document.getElementById(campoId);
+        if (campo) {
+            campo.value = valor || '';
+        }
+    }
+
+    campoValorEnElemento(elemento, valor) {
+        if (elemento) {
+            elemento.value = valor || '';
+        }
+    }
+
+    setCheckboxValue(campoId, valor) {
+        const campo = document.getElementById(campoId);
+        if (campo) {
+            campo.checked = !!valor;
         }
     }
 
@@ -280,34 +532,6 @@ class FormManager {
 
         // Recopilar datos básicos
         const datos = {
-            nombre: document.getElementById('nombre').value,
-            apellidos: document.getElementById('apellidos').value,
-            fecha_nacimiento: document.getElementById('fecha_nacimiento').value,
-            edad: parseInt(document.getElementById('edad').value) || null,
-            nacionalidad: document.getElementById('nacionalidad').value,
-            documento_identidad: document.getElementById('documento_identidad').value,
-            sexo: document.getElementById('sexo').value,
-            direccion: document.getElementById('direccion').value,
-            localidad: document.getElementById('localidad').value,
-            cp: document.getElementById('cp').value,
-            email: document.getElementById('email').value,
-            telefono1: document.getElementById('telefono1').value,
-            telefono2: document.getElementById('telefono2').value,
-            carnet: document.getElementById('carnet').value,
-            vehiculo_propio: document.getElementById('vehiculo_propio').checked,
-            discapacidad_porcentaje: parseInt(document.getElementById('discapacidad_porcentaje').value) || null,
-            discapacidad_tipo: document.getElementById('discapacidad_tipo').value,
-            entidad_derivacion: document.getElementById('entidad_derivacion').value,
-            tecnico_derivacion: document.getElementById('tecnico_derivacion').value,
-            colectivo: document.getElementById('colectivo').value,
-            composicion_familiar: document.getElementById('composicion_familiar').value,
-            situacion_economica: document.getElementById('situacion_economica').value,
-            otras_situaciones: document.getElementById('otras_situaciones').value,
-            formacion_academica: document.getElementById('formacion_academica').value,
-            ano_finalizacion: parseInt(document.getElementById('ano_finalizacion').value) || null,
-            idiomas: document.getElementById('idiomas').value,
-            informatica: document.getElementById('informatica').value,
-            experiencia_laboral_previa: document.getElementById('experiencia_laboral_previa').value,
             nombre: document.getElementById('nombre')?.value || '',
             apellidos: document.getElementById('apellidos')?.value || '',
             fecha_nacimiento: document.getElementById('fecha_nacimiento')?.value || '',
@@ -341,9 +565,9 @@ class FormManager {
         console.log('📊 Datos básicos recopilados:', datos);
         
         // Recopilar miembros perceptores
-        const miembrosElements = document.querySelectorAll('.miembro-perceptor');
+        const miembrosElements = document.querySelectorAll('.miembro-perceptor .dynamic-item');
         console.log(`👥 Encontrados ${miembrosElements.length} miembros perceptores`);
-
+        
         const miembrosPerceptores = [];
         
         miembrosElements.forEach((miembro, index) => {
@@ -368,7 +592,7 @@ class FormManager {
         
         // Recopilar formación complementaria
         const formacionComplementaria = [];
-        document.querySelectorAll('.curso-item').forEach(curso => {
+        document.querySelectorAll('#formacion-complementaria-lista .curso-item').forEach(curso => {
             const nombre = curso.querySelector('.nombre-curso')?.value || '';
             if (nombre) {
                 formacionComplementaria.push({
@@ -387,60 +611,82 @@ class FormManager {
 
     async guardarUsuario() {
         try {
-            console.log('🔄 Iniciando guardado de usuario...');
-            // Primero, remover todos los atributos required para evitar el error de foco
-            const requiredFields = document.querySelectorAll('#formulario-usuario [required]');
+            console.log('💾 Guardando usuario...');
             
-            const datos = this.obtenerDatosFormulario();
-            
-            // Validar campos obligatorios
-            if (!datos.nombre || !datos.apellidos || !datos.email) {
-                this.mostrarNotificacion('Por favor, completa los campos obligatorios', 'warning');
-                return;
+            // Validar todos los pasos
+            for (let i = 1; i <= this.totalPasos; i++) {
+                this.pasoActual = i;
+                if (!this.validarPasoActual()) {
+                    this.actualizarPaso();
+                    return;
+                }
             }
             
-            let resultado;
+            const datos = this.obtenerDatosFormulario();
+            console.log('📦 Datos a guardar:', datos);
+            
+            let usuarioGuardado;
             if (this.usuarioId) {
                 // Actualizar usuario existente
-                resultado = await ApiService.actualizarUsuario(this.usuarioId, datos);
+                usuarioGuardado = await ApiService.actualizarUsuario(this.usuarioId, datos);
                 this.mostrarNotificacion('Usuario actualizado correctamente', 'success');
             } else {
                 // Crear nuevo usuario
-                resultado = await ApiService.crearUsuario(datos);
+                usuarioGuardado = await ApiService.crearUsuario(datos);
                 this.mostrarNotificacion('Usuario creado correctamente', 'success');
             }
             
-            // Volver a la lista y recargar
-            appManager.mostrarVista('lista');
-            appManager.cargarUsuarios();
+            // Limpiar formulario y volver a la lista
+            setTimeout(() => {
+                this.limpiarFormulario();
+                window.appManager.mostrarVista('lista');
+                window.appManager.actualizarTitulo('Dashboard');
+                window.appManager.cargarUsuarios();
+            }, 1500);
             
         } catch (error) {
-            console.error('Error al guardar usuario:', error);
-            this.mostrarNotificacion(`Error: ${error.message}`, 'error');
+            console.error('❌ Error al guardar usuario:', error);
+            this.mostrarNotificacion(`Error al guardar usuario: ${error.message}`, 'error');
         }
     }
 
     mostrarNotificacion(mensaje, tipo = 'info') {
-        const toast = document.getElementById('toast-notificacion');
-        const toastTitulo = document.getElementById('toast-titulo');
-        const toastMensaje = document.getElementById('toast-mensaje');
+        console.log(`🔔 Mostrando notificación: ${mensaje} (${tipo})`);
         
-        // Configurar título según el tipo
-        const titulos = {
-            'success': 'Éxito',
-            'error': 'Error',
-            'warning': 'Advertencia',
-            'info': 'Información'
-        };
+        // Crear toast
+        const toastHTML = `
+            <div class="toast align-items-center text-white bg-${tipo === 'success' ? 'success' : tipo === 'error' ? 'danger' : tipo === 'warning' ? 'warning' : 'primary'} border-0" role="alert">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        ${mensaje}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            </div>
+        `;
         
-        toastTitulo.textContent = titulos[tipo] || 'Notificación';
-        toastMensaje.textContent = mensaje;
+        // Crear container si no existe
+        let toastContainer = document.querySelector('.toast-container');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.className = 'toast-container';
+            document.body.appendChild(toastContainer);
+        }
         
-        // Configurar clase según el tipo
-        toast.className = `toast bg-${tipo === 'error' ? 'danger' : tipo}`;
+        // Añadir toast
+        toastContainer.insertAdjacentHTML('beforeend', toastHTML);
         
         // Mostrar toast
-        const bsToast = new bootstrap.Toast(toast);
-        bsToast.show();
+        const toastElement = toastContainer.lastElementChild;
+        const toast = new bootstrap.Toast(toastElement, {
+            autohide: true,
+            delay: 3000
+        });
+        toast.show();
+        
+        // Eliminar toast después de ocultarse
+        toastElement.addEventListener('hidden.bs.toast', () => {
+            toastElement.remove();
+        });
     }
 }
