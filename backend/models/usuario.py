@@ -16,7 +16,7 @@ class Usuario(db.Model):
     edad = db.Column(db.Integer)
     nacionalidad = db.Column(db.String(50))
     documento_identidad = db.Column(db.String(20), unique=True)
-    sexo = db.Column(db.Enum('Mujer', 'Hombre', name='sexo_enum'))
+    sexo = db.Column(db.Enum('Mujer', 'Hombre', name='sexo_enum'), nullable=True)
     direccion = db.Column(db.Text)
     localidad = db.Column(db.String(100))
     cp = db.Column(db.String(10))
@@ -68,7 +68,7 @@ class Usuario(db.Model):
             'edad': self.edad,
             'nacionalidad': self.nacionalidad,
             'documento_identidad': self.documento_identidad,
-            "sexo": self.sexo if self.sexo in ["Mujer", "Hombre", " "] else None,
+            "sexo": self.sexo if self.sexo in ["Mujer", "Hombre"] else None,
             'direccion': self.direccion,
             'localidad': self.localidad,
             'cp': self.cp,

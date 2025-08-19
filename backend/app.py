@@ -3,6 +3,7 @@ import os
 import sys
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from sqlalchemy import text
 from models.usuario import db
 from models.formacion_complementaria import FormacionComplementaria
 from config import Config
@@ -96,7 +97,7 @@ def create_app(config_class=Config):
     def health_check():
         try:
             # Probar conexión a la base de datos
-            db.session.execute('SELECT 1')
+            db.session.execute(text('SELECT 1'))
             return jsonify({
                 'status': 'healthy',
                 'database': 'connected',

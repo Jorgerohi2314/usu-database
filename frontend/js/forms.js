@@ -343,6 +343,8 @@ class FormManager {
         // Recopilar miembros perceptores
         const miembrosElements = document.querySelectorAll('.miembro-perceptor');
         console.log(`👥 Encontrados ${miembrosElements.length} miembros perceptores`);
+
+        const miembrosPerceptores = [];
         
         miembrosElements.forEach((miembro, index) => {
             const numeroInput = miembro.querySelector('input[type="number"]');
@@ -367,14 +369,14 @@ class FormManager {
         // Recopilar formación complementaria
         const formacionComplementaria = [];
         document.querySelectorAll('.curso-item').forEach(curso => {
-            const nombre = curso.querySelector('.nombre-curso').value;
+            const nombre = curso.querySelector('.nombre-curso')?.value || '';
             if (nombre) {
                 formacionComplementaria.push({
                     nombre_curso: nombre,
-                    duracion: curso.querySelector('.duracion-curso').value,
-                    horas: parseInt(curso.querySelector('.horas-curso').value) || null,
-                    entidad: curso.querySelector('.entidad-curso').value,
-                    fecha_realizacion: curso.querySelector('.fecha-curso').value
+                    duracion: curso.querySelector('.duracion-curso')?.value || '',
+                    horas: parseInt(curso.querySelector('.horas-curso')?.value) || null,
+                    entidad: curso.querySelector('.entidad-curso')?.value || '',
+                    fecha_realizacion: curso.querySelector('.fecha-curso')?.value || ''
                 });
             }
         });
