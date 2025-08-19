@@ -13,6 +13,10 @@ class AppManager {
         
         console.log('🔧 Inicializando eventos de AppManager...');
         this.inicializarEventos();
+
+        console.log('🌓 Cargando preferencia de tema...');
+        this.cargarPreferenciaTema();
+        
         
         console.log('📥 Cargando usuarios iniciales...');
         this.cargarUsuarios();
@@ -47,10 +51,13 @@ class AppManager {
             this.actualizarTitulo('Dashboard');
         });
 
-        // Toggle sidebar
-        document.getElementById('btn-toggle-sidebar').addEventListener('click', () => {
-            this.toggleSidebar();
-        });
+        // Toggle dark mode
+        const themeToggle = document.querySelector('.btn-action');
+        if (themeToggle) {
+            themeToggle.addEventListener('click', () => {
+                this.toggleDarkMode();
+            });
+        }
 
         // Búsqueda y filtros
         const busquedaElement = document.getElementById('busqueda');
@@ -79,14 +86,39 @@ class AppManager {
         }
     }
 
-    toggleSidebar() {
-        const sidebar = document.querySelector('.sidebar');
-        const mainContent = document.querySelector('.main-content');
-        const topHeader = document.querySelector('.top-header');
+    toggleDarkMode() {
+        const body = document.body;
+        const themeIcon = document.querySelector('.btn-action i');
         
-        sidebar.classList.toggle('collapsed');
-        mainContent.classList.toggle('expanded');
-        topHeader.classList.toggle('expanded');
+        body.classList.toggle('dark-mode');
+        
+        // Cambiar el icono según el modo
+        if (body.classList.contains('dark-mode')) {
+            themeIcon.classList.remove('bi-moon-stars');
+            themeIcon.classList.add('bi-sun');
+            // Guardar preferencia en localStorage
+            localStorage.setItem('darkMode', 'enabled');
+        } else {
+            themeIcon.classList.remove('bi-sun');
+            themeIcon.classList.add('bi-moon-stars');
+            // Guardar preferencia en localStorage
+            localStorage.setItem('darkMode', 'disabled');
+        }
+    }
+
+    cargarPreferenciaTema() {
+        const savedTheme = localStorage.getItem('darkMode');
+        const themeIcon = document.querySelector('.btn-action i');
+        
+        if (savedTheme === 'enabled') {
+            document.body.classList.add('dark-mode');
+            themeIcon.classList.remove('bi-moon-stars');
+            themeIcon.classList.add('bi-sun');
+        } else if (savedTheme === 'disabled') {
+            document.body.classList.remove('dark-mode');
+            themeIcon.classList.remove('bi-sun');
+            themeIcon.classList.add('bi-moon-stars');
+        }
     }
 
     actualizarTitulo(titulo) {
